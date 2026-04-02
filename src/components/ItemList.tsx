@@ -104,8 +104,8 @@ export const ItemList: React.FC<Props> = ({ items, onChange }) => {
                 </p>
               </div>
 
-              {/* Actions — always visible on touch, hover-reveal on desktop */}
-              <div className="flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+              {/* Actions — always visible on touch, hover-reveal on pointer devices */}
+              <div className="flex items-center gap-1 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 transition-opacity">
                 <button
                   title="Move left"
                   disabled={idx === 0}
