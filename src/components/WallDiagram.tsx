@@ -7,6 +7,24 @@ const COLOURS = [
   '#3b82f6', '#ec4899', '#8b5cf6', '#14b8a6',
 ];
 
+type SvgC = {
+  svgBg: string; wallFill: string; wallStroke: string; dimLine: string;
+  arrowColor: string; centreLine: string; centreAccent: string; holeGuide: string;
+  textPrimary: string; textMuted: string; rulerBase: string; segMargin: string; segGutter: string;
+};
+const DARK_SVG: SvgC = {
+  svgBg: '#121a30', wallFill: '#15213e', wallStroke: '#2a3e77', dimLine: '#2a3e77',
+  arrowColor: '#a9b8df', centreLine: 'rgba(0,209,255,0.45)', centreAccent: '#00d1ff',
+  holeGuide: 'rgba(0,209,255,0.3)', textPrimary: '#f3f7ff', textMuted: '#a9b8df',
+  rulerBase: '#2a3e77', segMargin: '#4a6090', segGutter: '#3d5580',
+};
+const LIGHT_SVG: SvgC = {
+  svgBg: '#eef2ff', wallFill: '#dce6ff', wallStroke: '#b8c8ee', dimLine: '#c8d4f0',
+  arrowColor: '#6a85b8', centreLine: 'rgba(0,140,185,0.35)', centreAccent: '#007fa8',
+  holeGuide: 'rgba(0,140,185,0.2)', textPrimary: '#0d1730', textMuted: '#5a6e9a',
+  rulerBase: '#b8c8ee', segMargin: '#8a9fc0', segGutter: '#aabcd8',
+};
+
 // ── Layout constants (px) ────────────────────────────────────────────────────
 const PAD = 28;            // left/right SVG padding
 const WALL_TOP = 52;       // top of wall band
@@ -32,10 +50,12 @@ interface Props {
   items: ItemDef[];
   layout: LayoutResult;
   svgWidth: number;
+  theme: 'dark' | 'light';
 }
 
-export const WallDiagram: React.FC<Props> = ({ wall, items, layout, svgWidth }) => {
+export const WallDiagram: React.FC<Props> = ({ wall, items, layout, svgWidth, theme }) => {
   const svgRef = useRef<SVGSVGElement>(null);
+  const C = theme === 'dark' ? DARK_SVG : LIGHT_SVG;
 
   const drawW  = svgWidth - PAD * 2;
   const scale  = drawW / wall.width;
@@ -60,11 +80,12 @@ export const WallDiagram: React.FC<Props> = ({ wall, items, layout, svgWidth }) 
   // Segments for the bottom ruler: left margin | items + gutters | right margin
   const segments = useMemo<Segment[]>(() => {
     if (!items.length) return [];
+    const c = theme === 'dark' ? DARK_SVG : LIGHT_SVG;
     const segs: Segment[] = [];
 
     const firstStart = layout.itemStartPositions[0];
     if (firstStart > 0.05) {
-      segs.push({ start: 0, end: firstStart, label: `${round1(firstStart)} cm`, colour: '#9ca3af' });
+      segs.push({ start: 0, end: firstStart, label: `${round1(firstStart)} cm`, colour: c.segMargin });
     }
 
     items.forEach((item, i) => {
@@ -78,7 +99,7 @@ export const WallDiagram: React.FC<Props> = ({ wall, items, layout, svgWidth }) 
             start: s + item.width,
             end: layout.itemStartPositions[i + 1],
             label: `${round1(gap)} cm`,
-            colour: '#d1d5db',
+            colour: c.segGutter,
           });
         }
       }
@@ -87,10 +108,10 @@ export const WallDiagram: React.FC<Props> = ({ wall, items, layout, svgWidth }) 
     const lastEnd = layout.itemStartPositions[items.length - 1] + items[items.length - 1].width;
     const rightM  = wall.width - lastEnd;
     if (rightM > 0.05) {
-      segs.push({ start: lastEnd, end: wall.width, label: `${round1(rightM)} cm`, colour: '#9ca3af' });
+      segs.push({ start: lastEnd, end: wall.width, label: `${round1(rightM)} cm`, colour: c.segMargin });
     }
     return segs;
-  }, [items, layout, wall.width, colourMap]);
+  }, [items, layout, wall.width, colourMap, theme]);
 
   // ── PNG download ────────────────────────────────────────────────────────────
   const downloadPng = useCallback(() => {
@@ -109,7 +130,7 @@ export const WallDiagram: React.FC<Props> = ({ wall, items, layout, svgWidth }) 
       canvas.height = DIAGRAM_H * px;
       const ctx = canvas.getContext('2d')!;
       ctx.scale(px, px);
-      ctx.fillStyle = '#ffffff';
+      ctx.fillStyle = C.svgBg;
       ctx.fillRect(0, 0, svgWidth, DIAGRAM_H);
       ctx.drawImage(img, 0, 0, svgWidth, DIAGRAM_H);
       URL.revokeObjectURL(url);
@@ -127,22 +148,19 @@ export const WallDiagram: React.FC<Props> = ({ wall, items, layout, svgWidth }) 
       }, 'image/png');
     };
     img.src = url;
-  }, [svgWidth]);
+  }, [svgWidth, theme]);
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
+    <div className="wp-panel">
       <div className="flex items-center justify-between mb-3">
-        <h2 className="text-lg font-semibold text-gray-800">Wall diagram</h2>
-        <button
-          onClick={downloadPng}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 active:bg-gray-100 transition-colors"
-        >
+        <h2 className="wp-heading" style={{ margin: 0 }}>Wall diagram</h2>
+        <button onClick={downloadPng} className="wp-btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           ⬇ Save PNG
         </button>
       </div>
 
       {layout.overflow && (
-        <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2 mb-3">
+        <p className="text-sm rounded-lg px-3 py-2 mb-3" style={{ color: 'var(--lt-red)', background: 'rgba(255,59,63,0.1)', border: '1px solid rgba(255,59,63,0.3)' }}>
           ⚠ Items overflow the wall width — check your measurements.
         </p>
       )}
@@ -153,41 +171,41 @@ export const WallDiagram: React.FC<Props> = ({ wall, items, layout, svgWidth }) 
         height={DIAGRAM_H}
         viewBox={`0 0 ${svgWidth} ${DIAGRAM_H}`}
         className="w-full"
-        style={{ fontFamily: 'system-ui, sans-serif' }}
+        style={{ fontFamily: "'Outfit', system-ui, sans-serif" }}
       >
-        {/* White fill for PNG export */}
-        <rect width={svgWidth} height={DIAGRAM_H} fill="white" />
+        {/* Background fill */}
+        <rect width={svgWidth} height={DIAGRAM_H} fill={C.svgBg} />
 
         <defs>
           {/* Arrowheads for the wall-span dimension line */}
           <marker id="dimArrowL" markerWidth="6" markerHeight="6" refX="6" refY="3" orient="auto">
-            <path d="M6,0 L0,3 L6,6" fill="none" stroke="#9ca3af" strokeWidth="1.2" />
+            <path d="M6,0 L0,3 L6,6" fill="none" stroke={C.arrowColor} strokeWidth="1.2" />
           </marker>
           <marker id="dimArrowR" markerWidth="6" markerHeight="6" refX="0" refY="3" orient="auto">
-            <path d="M0,0 L6,3 L0,6" fill="none" stroke="#9ca3af" strokeWidth="1.2" />
+            <path d="M0,0 L6,3 L0,6" fill="none" stroke={C.arrowColor} strokeWidth="1.2" />
           </marker>
         </defs>
 
         {/* ── Wall-span dimension (above wall) ── */}
         {/* Vertical witness lines at each wall edge */}
-        <line x1={PAD}        x2={PAD}        y1={DIM_TEXT_Y - 2} y2={WALL_TOP} stroke="#e5e7eb" strokeWidth={1} />
-        <line x1={PAD + drawW} x2={PAD + drawW} y1={DIM_TEXT_Y - 2} y2={WALL_TOP} stroke="#e5e7eb" strokeWidth={1} />
+        <line x1={PAD}        x2={PAD}        y1={DIM_TEXT_Y - 2} y2={WALL_TOP} stroke={C.dimLine} strokeWidth={1} />
+        <line x1={PAD + drawW} x2={PAD + drawW} y1={DIM_TEXT_Y - 2} y2={WALL_TOP} stroke={C.dimLine} strokeWidth={1} />
         {/* Horizontal arrow */}
         <line
           x1={PAD} x2={PAD + drawW} y1={DIM_LINE_Y} y2={DIM_LINE_Y}
-          stroke="#9ca3af" strokeWidth={1}
+          stroke={C.arrowColor} strokeWidth={1}
           markerStart="url(#dimArrowL)" markerEnd="url(#dimArrowR)"
         />
-        <text x={PAD + drawW / 2} y={DIM_TEXT_Y} textAnchor="middle" fontSize={11} fill="#6b7280">
+        <text x={PAD + drawW / 2} y={DIM_TEXT_Y} textAnchor="middle" fontSize={11} fill={C.arrowColor}>
           {wall.width} cm total
         </text>
 
         {/* ── Wall outline ── */}
-        <rect x={PAD} y={WALL_TOP} width={drawW} height={WALL_H} rx={4} fill="#f9fafb" stroke="#d1d5db" strokeWidth={2} />
+        <rect x={PAD} y={WALL_TOP} width={drawW} height={WALL_H} rx={4} fill={C.wallFill} stroke={C.wallStroke} strokeWidth={2} />
 
         {/* ── Centre dashed line ── */}
-        <line x1={cx} x2={cx} y1={WALL_TOP} y2={WALL_BOTTOM} stroke="#c4b5fd" strokeWidth={1} strokeDasharray="4 3" />
-        <text x={cx} y={WALL_BOTTOM + 10} textAnchor="middle" fontSize={9} fill="#a78bfa">↑ centre</text>
+        <line x1={cx} x2={cx} y1={WALL_TOP} y2={WALL_BOTTOM} stroke={C.centreLine} strokeWidth={1} strokeDasharray="4 3" />
+        <text x={cx} y={WALL_BOTTOM + 10} textAnchor="middle" fontSize={9} fill={C.centreAccent}>↑ centre</text>
 
         {/* ── Items + holes ── */}
         {items.map((item, i) => {
@@ -222,19 +240,19 @@ export const WallDiagram: React.FC<Props> = ({ wall, items, layout, svgWidth }) 
                   <g key={hi}>
                     {/* Dashed guide vertical */}
                     <line x1={hpx} x2={hpx} y1={WALL_TOP + 6} y2={WALL_BOTTOM - 6}
-                      stroke="#374151" strokeWidth={1} strokeDasharray="2 2" />
+                      stroke={C.holeGuide} strokeWidth={1} strokeDasharray="2 2" />
                     {/* Crosshair */}
-                    <circle cx={hpx} cy={WALL_MID} r={5} fill="white" stroke="#1f2937" strokeWidth={1.5} />
-                    <line x1={hpx - 4} x2={hpx + 4} y1={WALL_MID} y2={WALL_MID} stroke="#1f2937" strokeWidth={1} />
-                    <line x1={hpx} x2={hpx} y1={WALL_MID - 4} y2={WALL_MID + 4} stroke="#1f2937" strokeWidth={1} />
+                    <circle cx={hpx} cy={WALL_MID} r={5} fill={C.svgBg} stroke={C.centreAccent} strokeWidth={1.5} />
+                    <line x1={hpx - 4} x2={hpx + 4} y1={WALL_MID} y2={WALL_MID} stroke={C.centreAccent} strokeWidth={1} />
+                    <line x1={hpx} x2={hpx} y1={WALL_MID - 4} y2={WALL_MID + 4} stroke={C.centreAccent} strokeWidth={1} />
 
                     {/* ← fromLeft  (above wall) */}
-                    <text x={hpx} y={WALL_TOP - 7} textAnchor="middle" fontSize={8} fill="#1f2937" fontWeight={700}>
+                    <text x={hpx} y={WALL_TOP - 7} textAnchor="middle" fontSize={8} fill={C.textPrimary} fontWeight={700}>
                       ←{h.fromLeft}cm
                     </text>
 
                     {/* fromRight →  (below wall) */}
-                    <text x={hpx} y={FROM_R_Y} textAnchor="middle" fontSize={8} fill="#6b7280">
+                    <text x={hpx} y={FROM_R_Y} textAnchor="middle" fontSize={8} fill={C.textMuted}>
                       {h.fromRight}cm→
                     </text>
                   </g>
@@ -248,10 +266,10 @@ export const WallDiagram: React.FC<Props> = ({ wall, items, layout, svgWidth }) 
         {items.length > 0 && (
           <g>
             {/* Baseline */}
-            <line x1={PAD} x2={PAD + drawW} y1={RULER_Y} y2={RULER_Y} stroke="#e5e7eb" strokeWidth={1} />
+            <line x1={PAD} x2={PAD + drawW} y1={RULER_Y} y2={RULER_Y} stroke={C.rulerBase} strokeWidth={1} />
             {/* Wall edge ticks */}
-            <line x1={PAD}        x2={PAD}        y1={RULER_Y - 5} y2={RULER_Y + 5} stroke="#9ca3af" strokeWidth={1.5} />
-            <line x1={PAD + drawW} x2={PAD + drawW} y1={RULER_Y - 5} y2={RULER_Y + 5} stroke="#9ca3af" strokeWidth={1.5} />
+            <line x1={PAD}        x2={PAD}        y1={RULER_Y - 5} y2={RULER_Y + 5} stroke={C.arrowColor} strokeWidth={1.5} />
+            <line x1={PAD + drawW} x2={PAD + drawW} y1={RULER_Y - 5} y2={RULER_Y + 5} stroke={C.arrowColor} strokeWidth={1.5} />
 
             {segments.map((seg, si) => {
               const x1   = toX(seg.start);
@@ -274,7 +292,7 @@ export const WallDiagram: React.FC<Props> = ({ wall, items, layout, svgWidth }) 
         )}
       </svg>
 
-      <p className="text-xs text-gray-400 mt-2">← from left wall edge &nbsp;·&nbsp; from right wall edge →</p>
+      <p className="text-xs mt-2" style={{ color: 'var(--lt-subtle)' }}>← from left wall edge &nbsp;·&nbsp; from right wall edge →</p>
     </div>
   );
 };

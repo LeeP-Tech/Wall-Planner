@@ -51,13 +51,13 @@ export const ItemList: React.FC<Props> = ({ items, onChange }) => {
   };
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm space-y-3">
+    <div className="wp-panel space-y-3">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-gray-800">Items</h2>
+        <h2 className="wp-heading" style={{ margin: 0 }}>Items</h2>
         {!showAddForm && (
           <button
             onClick={() => { setShowAddForm(true); setEditingId(null); }}
-            className="bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors"
+            className="wp-btn-primary"
           >
             + Add item
           </button>
@@ -72,7 +72,7 @@ export const ItemList: React.FC<Props> = ({ items, onChange }) => {
       )}
 
       {items.length === 0 && !showAddForm && (
-        <p className="text-sm text-gray-400 italic">No items yet — add one above.</p>
+        <p className="text-sm italic" style={{ color: 'var(--lt-subtle)' }}>No items yet — add one above.</p>
       )}
 
       {items.map((item, idx) => (
@@ -84,17 +84,17 @@ export const ItemList: React.FC<Props> = ({ items, onChange }) => {
               onCancel={() => setEditingId(null)}
             />
           ) : (
-            <div className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 bg-gray-50 group">
+            <div className="wp-item-row group">
               {/* Colour swatch */}
               <div
-                className="w-4 h-10 rounded flex-shrink-0"
+                className="w-1 h-10 rounded-full flex-shrink-0"
                 style={{ backgroundColor: colour(idx) }}
               />
 
               {/* Details */}
               <div className="flex-1 min-w-0">
-                <p className="font-medium text-gray-800 text-sm truncate">{item.name}</p>
-                <p className="text-xs text-gray-500">
+                <p className="font-semibold text-sm truncate" style={{ color: 'var(--lt-ink)' }}>{item.name}</p>
+                <p className="text-xs" style={{ color: 'var(--lt-subtle)' }}>
                   {item.width} cm wide ·{' '}
                   {item.holeCount === 1
                     ? '1 hole'
@@ -105,33 +105,33 @@ export const ItemList: React.FC<Props> = ({ items, onChange }) => {
               </div>
 
               {/* Actions — always visible on touch, hover-reveal on pointer devices */}
-              <div className="flex items-center gap-1 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 transition-opacity">
+              <div className="flex items-center gap-0.5 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 transition-opacity">
                 <button
                   title="Move left"
                   disabled={idx === 0}
                   onClick={() => move(item.id, -1)}
-                  className="p-2 rounded hover:bg-gray-200 active:bg-gray-300 disabled:opacity-30 text-gray-600"
+                  className="wp-btn-icon"
                 >←</button>
                 <button
                   title="Move right"
                   disabled={idx === items.length - 1}
                   onClick={() => move(item.id, 1)}
-                  className="p-2 rounded hover:bg-gray-200 active:bg-gray-300 disabled:opacity-30 text-gray-600"
+                  className="wp-btn-icon"
                 >→</button>
                 <button
                   title="Edit"
                   onClick={() => { setEditingId(item.id); setShowAddForm(false); }}
-                  className="p-2 rounded hover:bg-gray-200 active:bg-gray-300 text-gray-600 text-xs font-medium"
+                  className="wp-btn-icon"
                 >Edit</button>
                 <button
                   title="Copy"
                   onClick={() => copy(item)}
-                  className="p-2 rounded hover:bg-gray-200 active:bg-gray-300 text-gray-600 text-xs font-medium"
+                  className="wp-btn-icon"
                 >Copy</button>
                 <button
                   title="Delete"
                   onClick={() => remove(item.id)}
-                  className="p-2 rounded hover:bg-red-100 active:bg-red-200 text-red-500 text-xs font-medium"
+                  className="wp-btn-icon danger"
                 >✕</button>
               </div>
             </div>
