@@ -1,5 +1,6 @@
 import React from 'react';
-import type { HoleResult } from '../lib/types';
+import type { AccuracyStepMm, HoleResult, UnitSystem } from '../lib/types';
+import { formatLengthWithAccuracy, formatSignedLength } from '../lib/units';
 
 const COLOURS = [
   '#6366f1', '#10b981', '#f59e0b', '#ef4444',
@@ -10,17 +11,11 @@ interface Props {
   holes: HoleResult[];
   /** Item ids in order, used to assign consistent colours */
   orderedItemIds: string[];
+  unitSystem: UnitSystem;
+  accuracyStepMm: AccuracyStepMm;
 }
 
-const fmt = (n: number) => {
-  const fixed = n.toFixed(1);
-  // Trim unnecessary trailing ".0" for tidiness
-  return fixed.endsWith('.0') ? fixed.slice(0, -2) : fixed;
-};
-
-const sign = (n: number) => (n > 0 ? '+' : '') + fmt(n);
-
-export const MeasurementTable: React.FC<Props> = ({ holes, orderedItemIds }) => {
+export const MeasurementTable: React.FC<Props> = ({ holes, orderedItemIds, unitSystem, accuracyStepMm }) => {
   if (holes.length === 0) {
     return (
       <div className="wp-panel">
@@ -45,10 +40,12 @@ export const MeasurementTable: React.FC<Props> = ({ holes, orderedItemIds }) => 
           <tr style={{ background: 'var(--lt-panel-strong)', color: 'var(--lt-subtle)' }} className="text-xs uppercase tracking-wide">
             <th className="px-3 py-2 text-left font-semibold" style={{ borderBottom: '1px solid var(--lt-line)' }}>Item</th>
             <th className="px-3 py-2 text-left font-semibold" style={{ borderBottom: '1px solid var(--lt-line)' }}>Hole</th>
-            <th className="px-3 py-2 text-right font-semibold" style={{ borderBottom: '1px solid var(--lt-line)' }}>From left (cm)</th>
-            <th className="px-3 py-2 text-right font-semibold" style={{ borderBottom: '1px solid var(--lt-line)' }}>From right (cm)</th>
-            <th className="px-3 py-2 text-right font-semibold" style={{ borderBottom: '1px solid var(--lt-line)' }}>From centre (cm)</th>
-            <th className="px-3 py-2 text-right font-semibold" style={{ borderBottom: '1px solid var(--lt-line)' }}>Gap to next hole (cm)</th>
+            <th className="px-3 py-2 text-right font-semibold" style={{ borderBottom: '1px solid var(--lt-line)' }}>From left</th>
+            <th className="px-3 py-2 text-right font-semibold" style={{ borderBottom: '1px solid var(--lt-line)' }}>From right</th>
+            <th className="px-3 py-2 text-right font-semibold" style={{ borderBottom: '1px solid var(--lt-line)' }}>From top</th>
+            <th className="px-3 py-2 text-right font-semibold" style={{ borderBottom: '1px solid var(--lt-line)' }}>From bottom</th>
+            <th className="px-3 py-2 text-right font-semibold" style={{ borderBottom: '1px solid var(--lt-line)' }}>From centre</th>
+            <th className="px-3 py-2 text-right font-semibold" style={{ borderBottom: '1px solid var(--lt-line)' }}>Gap to next hole</th>
           </tr>
         </thead>
         <tbody>
@@ -71,13 +68,15 @@ export const MeasurementTable: React.FC<Props> = ({ holes, orderedItemIds }) => 
                       </td>
                     ) : null}
                     <td className="px-3 py-2 text-center" style={{ color: 'var(--lt-subtle)' }}>{h.holeIndex + 1}</td>
-                    <td className="px-3 py-2 text-right font-mono font-semibold" style={{ color: 'var(--lt-ink)' }}>{fmt(h.fromLeft)}</td>
-                    <td className="px-3 py-2 text-right font-mono" style={{ color: 'var(--lt-subtle)' }}>{fmt(h.fromRight)}</td>
+                    <td className="px-3 py-2 text-right font-mono font-semibold" style={{ color: 'var(--lt-ink)' }}>{formatLengthWithAccuracy(h.fromLeft, unitSystem, accuracyStepMm)}</td>
+                    <td className="px-3 py-2 text-right font-mono" style={{ color: 'var(--lt-subtle)' }}>{formatLengthWithAccuracy(h.fromRight, unitSystem, accuracyStepMm)}</td>
+                    <td className="px-3 py-2 text-right font-mono" style={{ color: 'var(--lt-subtle)' }}>{formatLengthWithAccuracy(h.fromTop, unitSystem, accuracyStepMm)}</td>
+                    <td className="px-3 py-2 text-right font-mono" style={{ color: 'var(--lt-subtle)' }}>{formatLengthWithAccuracy(h.fromBottom, unitSystem, accuracyStepMm)}</td>
                     <td className={`px-3 py-2 text-right font-mono`} style={{ color: h.fromCenter < 0 ? '#ff6b8a' : h.fromCenter > 0 ? 'var(--lt-cyan)' : 'var(--lt-ink)' }}>
-                      {sign(h.fromCenter)}
+                      {formatSignedLength(h.fromCenter, unitSystem, accuracyStepMm)}
                     </td>
                     <td className="px-3 py-2 text-right font-mono" style={{ color: 'var(--lt-subtle)' }}>
-                      {h.distToNextHole !== undefined ? fmt(h.distToNextHole) : '—'}
+                      {h.distToNextHole !== undefined ? formatLengthWithAccuracy(h.distToNextHole, unitSystem, accuracyStepMm) : '—'}
                     </td>
                   </tr>
                 ))}

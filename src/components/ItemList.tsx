@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
-import type { ItemDef } from '../lib/types';
+import type { AccuracyStepMm, ItemDef, UnitSystem, WallConfig } from '../lib/types';
+import { autoAssignRows } from '../lib/calculations';
+import { formatLengthWithAccuracy } from '../lib/units';
 import { ItemForm } from './ItemForm';
 
 // Palette of colours to cycle through for items
@@ -11,10 +13,13 @@ const COLOURS = [
 
 interface Props {
   items: ItemDef[];
+  wallConfig: WallConfig;
+  unitSystem: UnitSystem;
+  accuracyStepMm: AccuracyStepMm;
   onChange: (items: ItemDef[]) => void;
 }
 
-export const ItemList: React.FC<Props> = ({ items, onChange }) => {
+export const ItemList: React.FC<Props> = ({ items, wallConfig, unitSystem, accuracyStepMm, onChange }) => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
 
@@ -52,20 +57,32 @@ export const ItemList: React.FC<Props> = ({ items, onChange }) => {
 
   return (
     <div className="wp-panel space-y-3">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2 flex-wrap">
         <h2 className="wp-heading" style={{ margin: 0 }}>Items</h2>
-        {!showAddForm && (
-          <button
-            onClick={() => { setShowAddForm(true); setEditingId(null); }}
-            className="wp-btn-primary"
-          >
-            + Add item
-          </button>
-        )}
+        <div className="flex gap-2">
+          {items.length > 1 && (
+            <button
+              onClick={() => onChange(autoAssignRows(items, wallConfig))}
+              className="wp-btn-secondary"
+              title="Distribute items evenly across rows based on wall width"
+            >
+              Auto rows
+            </button>
+          )}
+          {!showAddForm && (
+            <button
+              onClick={() => { setShowAddForm(true); setEditingId(null); }}
+              className="wp-btn-primary"
+            >
+              + Add item
+            </button>
+          )}
+        </div>
       </div>
 
       {showAddForm && (
         <ItemForm
+          unitSystem={unitSystem}
           onSave={add}
           onCancel={() => setShowAddForm(false)}
         />
@@ -80,6 +97,7 @@ export const ItemList: React.FC<Props> = ({ items, onChange }) => {
           {editingId === item.id ? (
             <ItemForm
               initial={item}
+              unitSystem={unitSystem}
               onSave={update}
               onCancel={() => setEditingId(null)}
             />
@@ -95,12 +113,13 @@ export const ItemList: React.FC<Props> = ({ items, onChange }) => {
               <div className="flex-1 min-w-0">
                 <p className="font-semibold text-sm truncate" style={{ color: 'var(--lt-ink)' }}>{item.name}</p>
                 <p className="text-xs" style={{ color: 'var(--lt-subtle)' }}>
-                  {item.width} cm wide ·{' '}
+                  {formatLengthWithAccuracy(item.width, unitSystem, accuracyStepMm)} x {formatLengthWithAccuracy(item.height, unitSystem, accuracyStepMm)} · row {item.row} ·{' '}
                   {item.holeCount === 1
                     ? '1 hole'
-                    : `${item.holeCount} holes (spacing ${item.holeSpacing} cm)`}
-                  {item.holeOffset !== 0 && ` · offset ${item.holeOffset} cm`}
-                  {item.gutterBefore !== undefined && ` · gutter before ${item.gutterBefore} cm`}
+                    : `${item.holeCount} holes (spacing ${formatLengthWithAccuracy(item.holeSpacing, unitSystem, accuracyStepMm)})`}
+                  {item.holeOffset !== 0 && ` · offset ${formatLengthWithAccuracy(item.holeOffset, unitSystem, accuracyStepMm)}`}
+                  {(item.holeVerticalOffset ?? 0) !== 0 && ` · v-offset ${formatLengthWithAccuracy(item.holeVerticalOffset ?? 0, unitSystem, accuracyStepMm)}`}
+                  {item.gutterBefore !== undefined && ` · gutter before ${formatLengthWithAccuracy(item.gutterBefore, unitSystem, accuracyStepMm)}`}
                 </p>
               </div>
 
